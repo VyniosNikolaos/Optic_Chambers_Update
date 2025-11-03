@@ -12,6 +12,7 @@ TODO List:
   - Inventory to store unused Item
   - Obstruction zone and walls
 - Fix colored light and button feature
+- Fix bug found in the process
 
 If time:
 
