@@ -350,7 +350,6 @@ public class Lazer : MonoBehaviour
     // =================== Cuves ===================
     
     
-    
     void CopyLineRendererSetting(LineRenderer lr1, LineRenderer lr2, float mult = 1)
     {
         lr1.widthCurve = lr2.widthCurve;
