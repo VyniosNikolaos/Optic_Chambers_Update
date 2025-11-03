@@ -5917,6 +5917,7 @@ MonoBehaviour:
   draggableMask:
     serializedVersion: 2
     m_Bits: 0
+  followSpeed: 10
 --- !u!4 &1511500697
 Transform:
   m_ObjectHideFlags: 0
@@ -7816,6 +7817,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1576329825}
     m_Modifications:
+    - target: {fileID: 3986663810461940055, guid: 27f571540ea0cece9a53a27f914ffa5a, type: 3}
+      propertyPath: m_BodyType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 9085292050340677083, guid: 27f571540ea0cece9a53a27f914ffa5a, type: 3}
       propertyPath: m_Name
       value: spliter
@@ -7862,6 +7867,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9085292050340677085, guid: 27f571540ea0cece9a53a27f914ffa5a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9085292050340677086, guid: 27f571540ea0cece9a53a27f914ffa5a, type: 3}
+      propertyPath: m_IsTrigger
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
