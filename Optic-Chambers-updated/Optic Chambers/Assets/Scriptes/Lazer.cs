@@ -298,7 +298,7 @@ public class Lazer : MonoBehaviour
         _lasers.Add(new LaserObject(childLineRenderer.GetComponent<LineRenderer>(),_laserMaterial));
         _lasers[_lasers.Count-1].setColor(arrivingLaserColor);
         ShootLaser(_numberOfLaser, rayPower, directorVector, exitPointStrong, arrivingLaserColor); 
-        Debug.Log(1);
+        //Debug.Log(1);
         _numberOfLaser++;
         
         
@@ -315,7 +315,7 @@ public class Lazer : MonoBehaviour
         Vector2 symmetryAxisPoint = exitPointStrong + strongWeakVector2 / 2;
         
         // Set Twin
-        Debug.Log(2);
+        //Debug.Log(2);
         _lasers[_lasers.Count-1].setWeekTwin(new Vector2 (strongWeakVector2.y, -strongWeakVector2.x), symmetryAxisPoint, childLineRendererWeak.GetComponent<LineRenderer>());
         
     }
