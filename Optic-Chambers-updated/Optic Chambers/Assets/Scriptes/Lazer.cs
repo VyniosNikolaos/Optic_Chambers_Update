@@ -42,6 +42,33 @@ public class Lazer : MonoBehaviour
         waitendlevel = 0;
     }
 
+    // Laser on Destroy added to fix memory leak
+    private void OnDestroy()
+    {
+        // Clear and destroy pooled line renderers
+        while (_lineRendererPool.Count > 0)
+        {
+            GameObject obj = _lineRendererPool.Dequeue();
+            if (obj != null)
+            {
+                Destroy(obj);
+            }
+        }
+
+        // Clear line renderers to destroy list
+        foreach (GameObject lineRend in _lineRendererToDestroy)
+        {
+            if (lineRend != null)
+            {
+                Destroy(lineRend);
+            }
+        }
+        _lineRendererToDestroy.Clear();
+
+        // Clear laser list
+        _lasers?.Clear();
+    }
+
     void ShootLaser(int laserNumber, float rayPower, Vector2 laserDirectorVector, Vector2 startPoint, Color ShootedlaserColor)
     {
         // Stop if ray power is too low (prevents infinite recursion)
