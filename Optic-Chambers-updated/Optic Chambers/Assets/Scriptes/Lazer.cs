@@ -8,6 +8,7 @@ public class Lazer : MonoBehaviour
     [FormerlySerializedAs("RayDistance")] [SerializeField] private float rayDistance = 10;
     [FormerlySerializedAs("ResonatorBoostPower")] [SerializeField] private float resonatorBoostPower = 10;
     private LayerMask _laserLayer;
+    private static LayerMask _staticLaserLayer;
     private int _numberOfLaser;
 
     [SerializeField] private Color laserColor = Color.red;
@@ -31,6 +32,13 @@ public class Lazer : MonoBehaviour
         mLineRenderer.SetPosition(0, laserFirePoint.position);
         _laserMaterial = mLineRenderer.material;
         _laserLayer |= (1 << LayerMask.NameToLayer("Default"));
+        // Exclude draggable objects from laser collision detection
+        _laserLayer &= ~(1 << LayerMask.NameToLayer("Draggable"));
+        _laserLayer &= ~(1 << LayerMask.NameToLayer("Ignore Raycast"));
+        
+        // Initialize static layer mask for CheckCollision method
+        _staticLaserLayer = _laserLayer;
+        
         _lineRendererToDestroy = new List<GameObject>();
         _lineRendererPool = new Queue<GameObject>();
     }
@@ -83,7 +91,6 @@ public class Lazer : MonoBehaviour
                 switch (hit.transform.tag)
                 {
                     case "Mirror":
-                        
                         // Debug.Log("mirror");
                         ComputeMirror(laserDirectorVector, hit, rayPower-hit.distance, ShootedlaserColor);
                         break;
@@ -234,11 +241,23 @@ public class Lazer : MonoBehaviour
     
     void ComputeSplit(RaycastHit2D hit, float rayPower, Color arrivingLaserColor)
     {
+        // Check if we have enough child objects to avoid out of bounds error
+        if (hit.transform.childCount < 1)
+        {
+            Debug.LogError($"SplitEntrace object '{hit.transform.name}' doesn't have any child objects. Expected at least 1.");
+            return;
+        }
+        
+        Transform firstChild = hit.transform.GetChild(0);
+        if (firstChild.transform.childCount < 2)
+        {
+            Debug.LogError($"SplitEntrace first child '{firstChild.name}' doesn't have enough child objects. Expected at least 2, found {firstChild.childCount}");
+            return;
+        }
+        
         // Recover Exit point
-        Vector2 exitPoint1 = hit.transform.GetChild(0).transform.position;
-        // print(hit.transform.GetChild(0).transform.position);
-        Vector2 exitPoint2 = hit.transform.GetChild(1).transform.position;
-        // print(hit.transform.GetChild(1).transform.position);
+        Vector2 exitPoint1 = firstChild.transform.GetChild(0).transform.position;
+        Vector2 exitPoint2 = firstChild.transform.GetChild(1).transform.position;
         
         
         // Craft exit Director Vector
@@ -250,7 +269,7 @@ public class Lazer : MonoBehaviour
         // Laser Exit 1
         GameObject childLineRenderer = GetLineRendererFromPool();
         _lineRendererToDestroy.Add(childLineRenderer);
-        childLineRenderer.transform.parent = hit.transform.GetChild(0).transform;
+        childLineRenderer.transform.parent = firstChild.transform.GetChild(0).transform;
         childLineRenderer.transform.position = childLineRenderer.transform.parent.position;
         childLineRenderer.layer = 10;
         CopyLineRendererSetting(childLineRenderer.GetComponent<LineRenderer>(), mLineRenderer);
@@ -265,7 +284,7 @@ public class Lazer : MonoBehaviour
         // Laser Exit 2
         GameObject childLineRenderer2 = GetLineRendererFromPool();
         _lineRendererToDestroy.Add(childLineRenderer2);
-        childLineRenderer2.transform.parent = hit.transform.GetChild(1).transform;
+        childLineRenderer2.transform.parent = firstChild.transform.GetChild(1).transform;
         childLineRenderer2.transform.position = childLineRenderer2.transform.parent.position;
         childLineRenderer2.layer = 10;
         CopyLineRendererSetting(childLineRenderer2.GetComponent<LineRenderer>(), mLineRenderer);
@@ -299,18 +318,29 @@ public class Lazer : MonoBehaviour
 
     void ComputeResonatorTwin(RaycastHit2D hit, float rayPower, Color arrivingLaserColor)
     {
+        // Check if we have enough child objects to avoid out of bounds error
+        if (hit.transform.childCount < 1)
+        {
+            Debug.LogError($"TwinEntrace object '{hit.transform.name}' doesn't have any child objects. Expected at least 1.");
+            return;
+        }
+        
+        Transform firstChild = hit.transform.GetChild(0);
+        if (firstChild.transform.childCount < 2)
+        {
+            Debug.LogError($"TwinEntrace first child '{firstChild.name}' doesn't have enough child objects. Expected at least 2, found {firstChild.childCount}");
+            return;
+        }
+        
         // Recover Exit point
-        Vector2 exitPointStrong = hit.transform.GetChild(0).transform.position;
-        // print(hit.transform.GetChild(0).transform.position);
-        // Debug.Log(hit.transform.GetChild(0).name);
-        Vector2 exitPointWeak = hit.transform.GetChild(1).transform.position;
-        // Debug.Log(hit.transform.GetChild(1).name);
+        Vector2 exitPointStrong = firstChild.transform.GetChild(0).transform.position;
+        Vector2 exitPointWeak = firstChild.transform.GetChild(1).transform.position;
         
         // Craft exit Director Vector
         Vector2 directorVector = Vector2.right;
         
         // Animation
-        Transform sprite = hit.transform.GetChild(2);
+        Transform sprite = hit.transform;
         Animator boostAnimator = sprite.GetComponent<Animator>();
         boostAnimator.SetBool(Activated, true);
         sprite.GetComponent<AnimationTriggerManagment>().Hit();
@@ -318,7 +348,7 @@ public class Lazer : MonoBehaviour
         // Laser Strong
         GameObject childLineRenderer = GetLineRendererFromPool();
         _lineRendererToDestroy.Add(childLineRenderer);
-        childLineRenderer.transform.parent = hit.transform.GetChild(0).transform;
+        childLineRenderer.transform.parent = firstChild.transform.GetChild(0).transform;
         childLineRenderer.transform.position = childLineRenderer.transform.parent.position;
         childLineRenderer.layer = 10;
         CopyLineRendererSetting(childLineRenderer.GetComponent<LineRenderer>(), mLineRenderer);
@@ -332,7 +362,7 @@ public class Lazer : MonoBehaviour
         //Laser Weak
         GameObject childLineRendererWeak = GetLineRendererFromPool();
         _lineRendererToDestroy.Add(childLineRendererWeak);
-        childLineRendererWeak.transform.parent = hit.transform.GetChild(1).transform;
+        childLineRendererWeak.transform.parent = firstChild.transform.GetChild(1).transform;
         childLineRendererWeak.layer = 10;
         childLineRendererWeak.transform.position = childLineRendererWeak.transform.parent.position;
         CopyLineRendererSetting(childLineRendererWeak.GetComponent<LineRenderer>(), childLineRenderer.GetComponent<LineRenderer>(), 0.5f);
@@ -441,7 +471,7 @@ public class Lazer : MonoBehaviour
     public static Vector2 CheckCollision(Vector2 startPoint, Vector2 endPoint)
     {
         Vector2 laserDirectorVector = endPoint - startPoint;
-        RaycastHit2D hit = Physics2D.Raycast(startPoint, laserDirectorVector.normalized, laserDirectorVector.magnitude);
+        RaycastHit2D hit = Physics2D.Raycast(startPoint, laserDirectorVector.normalized, laserDirectorVector.magnitude, _staticLaserLayer);
         if (hit)
         {
             switch (hit.transform.tag)

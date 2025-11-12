@@ -5,11 +5,11 @@ using UnityEngine;
 
 public class DragAndDropManager : MonoBehaviour
 {
-    public LayerMask draggableMask;
+    [SerializeField] private LayerMask draggableMask;
     private Rigidbody2D selectedObject;
     private bool isDragging;
     private Camera mainCamera;
-    public float followSpeed = 0.1f; // higher = snappier following
+    [SerializeField] private float followSpeed = 1f; // force applied toward mouse (higher = stronger pull)
     private Vector2 targetPosition;
     private float savedGravityScale = 0f;
     private bool gravitySaved = false;
@@ -32,10 +32,13 @@ public class DragAndDropManager : MonoBehaviour
 
     private void TryBeginDrag()
     {
+        Debug.Log("trying to drag");
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction, Mathf.Infinity, draggableMask);
         Rigidbody2D rb = hit.collider != null ? hit.collider.gameObject.GetComponent<Rigidbody2D>() : null;
         if (rb == null) return;
+
+        Debug.Log("dragging object: " + rb.gameObject.name);
 
         selectedObject = rb;
         isDragging = true;
@@ -62,20 +65,38 @@ public class DragAndDropManager : MonoBehaviour
             selectedObject.gravityScale = savedGravityScale;
             gravitySaved = false;
         }
+        selectedObject.linearDamping = 500f;
         selectedObject = null;
     }
 
-    // Physics updates should happen in FixedUpdate so velocity/MovePosition are applied cleanly
+    // Physics updates should happen in FixedUpdate so forces are applied cleanly
     private void FixedUpdate()
     {
         if (!isDragging || selectedObject == null) return;
 
         Vector2 current = selectedObject.position;
-        // move toward the target using MovePosition to preserve collisions
-        float maxStep = followSpeed * Time.fixedDeltaTime;
-        Vector2 next = Vector2.MoveTowards(current, targetPosition, maxStep);
-        selectedObject.MovePosition(next);
-        // optionally zero angular motion while dragging
+        Vector2 direction = (targetPosition - current);
+        
+        if (selectedObject.bodyType == RigidbodyType2D.Kinematic)
+        {
+            // For kinematic bodies, use smooth MovePosition
+            Vector2 next = Vector2.Lerp(current, targetPosition, followSpeed * Time.fixedDeltaTime);
+            selectedObject.MovePosition(next);
+        }
+        else
+        {
+            Debug.Log("applying force");
+            // For dynamic bodies, apply force toward target (respects collisions naturally)
+            Vector2 force = direction * followSpeed;
+            selectedObject.AddForce(force, ForceMode2D.Force);
+            
+            // Optional: add damping to prevent oscillation
+            selectedObject.linearVelocity *= 0.1f;
+
+            selectedObject.linearDamping = 5f;
+        }
+        
+        // Zero angular motion while dragging
         selectedObject.angularVelocity = 0f;
     }
 
