@@ -14,6 +14,9 @@ public class UIManager : MonoBehaviour
     public GameObject MenuBackground;
     public GameObject Loading;
     public GameObject LevelsMenu;
+    public GameObject FS_SCREEN;
+
+    private LevelManager levelManager;
 
     Scene scene;
     void Awake()
@@ -32,6 +35,52 @@ public class UIManager : MonoBehaviour
     private void Start()
     {
         PlayMusic("Menu");
+        // Subscribe to scene change events to manage FS_SCREEN visibility
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        SceneManager.sceneUnloaded += OnSceneUnloaded;
+        // Set initial state based on current scene
+        ManageFSScreenVisibility();
+
+        levelManager = LevelManager.Instance;
+    }
+
+    private void OnDestroy()
+    {
+        // Unsubscribe from scene change events to prevent memory leaks
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+        }
+    }
+
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Call FS_SCREEN visibility management when any scene loads
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ManageFSScreenVisibility();
+        }
+    }
+
+    private static void OnSceneUnloaded(Scene scene)
+    {
+        // Also manage visibility when scenes are unloaded (for additive scenes)
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ManageFSScreenVisibility();
+        }
+    }
+
+    public void ManageFSScreenVisibility()
+    {
+        Scene currentScene = SceneManager.GetActiveScene();
+        // Show FS_SCREEN only in MainMenu scene (assuming that's the name of your main menu scene)
+        if (FS_SCREEN != null)
+        {
+            Debug.Log("Managing FS_SCREEN visibility for scene: " + currentScene.name);
+            FS_SCREEN.SetActive(currentScene.name == "MainMenu");
+        }
     }
     public static string ConvertIntToRoman(int num)
     {  
@@ -123,8 +172,21 @@ public class UIManager : MonoBehaviour
     }
     public void LevelVictory()
     {   
-        winscreen.SetActive(true);
+        if (winscreen != null)
+        {
+            winscreen.SetActive(true);
+        }
 
+        // Set level completed in json
+        if (LevelManager.Instance != null)
+        {
+            Scene currentScene = SceneManager.GetActiveScene();
+            LevelManager.Instance.CompleteLevel(currentScene.buildIndex - 1);
+        }
+        else
+        {
+            Debug.LogError("LevelManager.Instance is null - cannot complete level");
+        }
     }
     public void NextLevel()
     {
@@ -136,9 +198,9 @@ public class UIManager : MonoBehaviour
     
     public void BackMainScreen()
     {
-        
         winscreen.SetActive(false);
         SceneManager.LoadSceneAsync("MainMenu");
+        // FS_SCREEN will be automatically activated when MainMenu scene loads
         UIManager.Instance.PlaySfx("Menu_back");
         UIManager.Instance.musicSource.Stop();
         UIManager.Instance.PlayMusic("Menu");
@@ -146,7 +208,6 @@ public class UIManager : MonoBehaviour
     
     public void BackLevelScreen()
     {
-
         winscreen.SetActive(false);
         SceneManager.LoadSceneAsync("MainMenu");
         UIManager.Instance.PlaySfx("Menu_back");
