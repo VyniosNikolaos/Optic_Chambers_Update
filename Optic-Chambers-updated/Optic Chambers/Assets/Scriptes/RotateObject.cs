@@ -5,9 +5,11 @@ using UnityEngine;
 public class RotateObject : MonoBehaviour
 {
     private Camera myCamera;
-    private Vector3 screePos;
-    private float angleOffSet;
+    private Vector3 screenPos;
+    private float angleOffset;
     private Collider2D selectedObjectCollider;
+    private bool isRotating = false;
+    private float initialAngle;
     
     // Start is called before the first frame update
     void Start()
@@ -15,6 +17,38 @@ public class RotateObject : MonoBehaviour
         myCamera = Camera.main;
         selectedObjectCollider = GetComponent<Collider2D>();
     }
+
+    void on_rotate_begin()
+    {
+        isRotating = true;
+        // Calculate the initial offset between mouse and object rotation
+        screenPos = myCamera.WorldToScreenPoint(transform.position);
+        Vector3 mouseVector = Input.mousePosition - screenPos;
+        float mouseAngle = Mathf.Atan2(mouseVector.y, mouseVector.x) * Mathf.Rad2Deg;
+        initialAngle = transform.eulerAngles.z;
+        angleOffset = initialAngle - mouseAngle;
+    }
+
+    void on_rotate_end()
+    {
+        isRotating = false;
+    }
+
+    void on_rotating(Vector2 mousePos)
+    {
+        // Update screen position of the object
+        screenPos = myCamera.WorldToScreenPoint(transform.position);
+        
+        // Calculate angle from object center to mouse
+        Vector3 mouseVector = Input.mousePosition - screenPos;
+        float mouseAngle = Mathf.Atan2(mouseVector.y, mouseVector.x) * Mathf.Rad2Deg;
+        
+        // Apply rotation with the initial offset
+        float targetAngle = mouseAngle + angleOffset;
+        transform.eulerAngles = new Vector3(0, 0, targetAngle);
+    }
+
+
 
     // Update is called once per frame
     void Update()
@@ -24,22 +58,20 @@ public class RotateObject : MonoBehaviour
         {
             if (selectedObjectCollider == Physics2D.OverlapPoint(mousePos))
             {
-                screePos = myCamera.WorldToScreenPoint(transform.position);
-                Vector3 vector3 = Input.mousePosition - screePos;
-                angleOffSet = (Mathf.Atan2(transform.right.y, transform.right.x)- Mathf.Atan2(vector3.y, vector3.x))*Mathf.Rad2Deg;
+                on_rotate_begin();
             }
         }
 
-        if (Input.GetMouseButton(1))
+        if (Input.GetMouseButtonUp(1))
         {
-            if (selectedObjectCollider == Physics2D.OverlapPoint(mousePos))
-            {
-                Vector3 vector3 = Input.mousePosition - screePos;
-                float angle = Mathf.Atan2(vector3.y, vector3.x) * Mathf.Rad2Deg;
-                transform.eulerAngles = new Vector3(0, 0, angle + angleOffSet);
-            }
+            on_rotate_end();
         }
         
+
+        if (isRotating)
+        {
+            on_rotating(mousePos);
+        }
         
     }
 }
